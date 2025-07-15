@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getCategories, createPost, updatePost, getPost } from '../api/client';
+import { api } from '../api/client';
 
 const PostFormPage = () => {
   const { id } = useParams();
@@ -13,19 +13,8 @@ const PostFormPage = () => {
     // Fetch categories
     const fetchCategories = async () => {
       try {
-        const response = await getCategories();
-        console.log('Categories response:', response); // 디버깅을 위한 로그
-        if (Array.isArray(response)) {
-          setCategories(response.map(category => ({
-            ...category,
-            status: category.category_status === 'FREE' ? '자유게시판' :
-                    category.category_status === 'TIP' ? '팁게시판' :
-                    category.category_status === 'QUESTION' ? '질문게시판' : ''
-          })));
-        } else {
-          console.error('Invalid categories response:', response);
-          setCategories([]);
-        }
+        const response = await api.get('/api/categories');
+        setCategories(response.data || []);
       } catch (error) {
         console.error('Error fetching categories:', error);
         setCategories([]);
@@ -37,8 +26,8 @@ const PostFormPage = () => {
     if (id) {
       const fetchPost = async () => {
         try {
-          const data = await getPost(id);
-          setPost(data);
+          const response = await api.get(`/api/posts/${id}`);
+          setPost(response.data);
         } catch (error) {
           console.error('Error fetching post:', error);
           alert('게시글을 불러오는데 실패했습니다.');
@@ -65,10 +54,10 @@ const PostFormPage = () => {
       setIsSubmitting(true);
 
       if (id) {
-        await updatePost(id, post);
+        await api.put(`/api/posts/${id}`, post);
         navigate(`/posts/${id}`);
       } else {
-        await createPost(post);
+        await api.post('/api/posts', post);
         navigate('/posts');
       }
     } catch (error) {
@@ -107,8 +96,8 @@ const PostFormPage = () => {
           >
             <option value="">카테고리를 선택하세요</option>
             {Array.isArray(categories) && categories.map(category => (
-              <option key={category.category_id} value={category.category_id}>
-                {category.status}
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>

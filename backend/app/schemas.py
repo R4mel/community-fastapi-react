@@ -1,15 +1,20 @@
-from datetime import datetime
-from typing import List, Optional
 from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Optional, List
+from app.models import CategoryStatus
 
-from models import CategoryStatus
 
 class UserBase(BaseModel):
     social_id: str = Field(..., description="Social login ID")
     nickname: str = Field(..., description="User nickname")
     profile_image: Optional[str] = Field(None, description="Profile image URL")
     is_admin: bool = Field(False, description="Admin status")
+    is_active: bool = Field(True, description="Account active status")
     total_points: int = Field(0, description="Total points")
+
+
+class KakaoToken(BaseModel):
+    code: str = Field(..., description="Kakao authorization code")
 
 
 class UserCreate(UserBase):
@@ -22,6 +27,21 @@ class UserUpdate(BaseModel):
     total_points: Optional[int] = None
 
 
+class UserResponse(BaseModel):
+    user_id: int
+    social_id: str
+    nickname: str
+    profile_image: Optional[str] = None
+    is_admin: bool = False
+    is_active: bool = True  # 추가: 계정 활성화 상태
+    total_points: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class CategoryBase(BaseModel):
     category_status: CategoryStatus = Field(..., description="Category status")
 
@@ -30,8 +50,44 @@ class CategoryCreate(CategoryBase):
     pass
 
 
+class CategoryResponse(CategoryBase):
+    category_id: int
+
+    class Config:
+        from_attributes = True
+
+    def dict(self, *args, **kwargs):
+        d = super().dict(*args, **kwargs)
+        d["status"] = self.category_status.description if self.category_status else ""
+        return d
+
+
 class CategoryUpdate(CategoryBase):
     pass
+
+
+class CommentBase(BaseModel):
+    content: str = Field(..., description="Comment content")
+
+
+class CommentCreate(CommentBase):
+    pass
+
+
+class CommentUpdate(CommentBase):
+    pass
+
+
+class CommentResponse(CommentBase):
+    comment_id: int
+    post_id: int
+    user_id: int
+    user: UserResponse
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class PostBase(BaseModel):
@@ -50,16 +106,16 @@ class PostUpdate(BaseModel):
     category_id: Optional[int] = None
 
 
-class CommentBase(BaseModel):
-    content: str = Field(..., description="Comment content")
+class PostResponse(PostBase):
+    post_id: int
+    user_id: int
+    user: UserResponse
+    created_at: datetime
+    updated_at: datetime
+    comments: List[CommentResponse] = []
 
-
-class CommentCreate(CommentBase):
-    post_id: int = Field(..., description="Post ID")
-
-
-class CommentUpdate(CommentBase):
-    pass
+    class Config:
+        from_attributes = True
 
 
 class PostImageBase(BaseModel):
@@ -87,89 +143,11 @@ class LikeCreate(LikeBase):
 class LikeUpdate(LikeBase):
     pass
 
-class UserResponse(BaseModel):
-    user_id: int
-    social_id: str
-    nickname: str
-    profile_image: Optional[str] = None
-    is_admin: bool = False
-    total_points: int = 0
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class CategoryResponse(BaseModel):
-    category_id: int
-    category_status: CategoryStatus
-    
-    class Config:
-        from_attributes = True
-
-
-class PostImageResponse(BaseModel):
-    post_image_id: int
-    post_id: int
-    image_url: Optional[str] = None
-    original_filename: Optional[str] = None
-    
-    class Config:
-        from_attributes = True
-
-
-class CommentResponse(BaseModel):
-    comment_id: int
-    post_id: int
-    user_id: int
-    content: str
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class PostResponse(BaseModel):
-    post_id: int
-    title: str
-    content: str
-    user_id: int
-    category_id: int
-    created_at: datetime
-    updated_at: datetime
-    view_count: int
-    
-    class Config:
-        from_attributes = True
-
-
-class PostDetailResponse(PostResponse):
-    user: UserResponse
-    category: CategoryResponse
-    post_images: List[PostImageResponse] = []
-    comments: List[CommentResponse] = []
-    likes_count: int = 0
-    
-    class Config:
-        from_attributes = True
-
-
-class LikeResponse(BaseModel):
-    user_id: int
-    post_id: int
-    is_liked: bool
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
 
 __all__ = [
     # Pydantic request models
     "UserBase",
-    "UserCreate", 
+    "UserCreate",
     "UserUpdate",
     "CategoryBase",
     "CategoryCreate",
@@ -186,7 +164,6 @@ __all__ = [
     "LikeBase",
     "LikeCreate",
     "LikeUpdate",
-    
     # Pydantic response models
     "UserResponse",
     "CategoryResponse",
@@ -195,4 +172,4 @@ __all__ = [
     "CommentResponse",
     "PostImageResponse",
     "LikeResponse",
-] 
+]
