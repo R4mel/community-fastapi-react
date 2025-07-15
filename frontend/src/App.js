@@ -33,6 +33,7 @@ function App() {
           <Route path="/posts" element={<PostListPage />} />
           <Route path="/posts/new" element={user ? <PostFormPage /> : <PostListPage />} />
           <Route path="/posts/:id" element={<PostDetailPage />} />
+          <Route path="/posts/:id/edit" element={user ? <PostFormPage /> : <PostListPage />} />
           <Route path="/oauth/callback/kakao" element={<KakaoCallback setUser={setUser} />} />
         </Route>
       </Routes>
